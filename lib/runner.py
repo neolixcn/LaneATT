@@ -9,11 +9,12 @@ from tqdm import tqdm, trange
 
 
 class Runner:
-    def __init__(self, cfg, exp, device, resume=False, view=None, deterministic=False):
+    def __init__(self, cfg, exp, device, resume=False, ft=None, view=None, deterministic=False):
         self.cfg = cfg
         self.exp = exp
         self.device = device
         self.resume = resume
+        self.ft = ft
         self.view = view
         self.logger = logging.getLogger(__name__)
 
@@ -34,8 +35,15 @@ class Runner:
         optimizer = self.cfg.get_optimizer(model.parameters())
         scheduler = self.cfg.get_lr_scheduler(optimizer)
         if self.resume:
+            print("resume from last state!")
             last_epoch, model, optimizer, scheduler = self.exp.load_last_train_state(model, optimizer, scheduler)
             starting_epoch = last_epoch + 1
+        elif self.ft:
+            print(f"finetune form {self.ft}")
+            model= self.load_ckpt(model, self.ft)
+        else:
+            print("training from scratch!")
+
         max_epochs = self.cfg['epochs']
         train_loader = self.get_train_dataloader()
         loss_parameters = self.cfg.get_loss_parameters()
@@ -132,6 +140,11 @@ class Runner:
                                                  worker_init_fn=self._worker_init_fn_)
         return val_loader
 
+    def load_ckpt(self, model, ckpt):
+        train_state = torch.load(ckpt)
+        model.load_state_dict(train_state['model'])
+        return model
+    
     @staticmethod
     def _worker_init_fn_(_):
         torch_seed = torch.initial_seed()

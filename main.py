@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument("--exp_name", help="Experiment name", required=True)
     parser.add_argument("--cfg", help="Config file")
     parser.add_argument("--resume", action="store_true", help="Resume training")
+    parser.add_argument("--ft", default=None, help="specify the pretrained model path")
     parser.add_argument("--epoch", type=int, help="Epoch to test the model on")
     parser.add_argument("--cpu", action="store_true", help="(Unsupported) Use CPU instead of GPU")
     parser.add_argument("--save_predictions", action="store_true", help="Save predictions to pickle file")
@@ -21,6 +22,7 @@ def parse_args():
     parser.add_argument("--deterministic",
                         action="store_true",
                         help="set cudnn.deterministic = True and cudnn.benchmark = False")
+    parser.add_argument("--basedir", type=str, default="/data/pantengteng/laneATT_experiments")
     args = parser.parse_args()
     if args.cfg is None and args.mode == "train":
         raise Exception("If you are training, you have to set a config file using --cfg /path/to/your/config.yaml")
@@ -38,7 +40,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    exp = Experiment(args.exp_name, args, mode=args.mode)
+    exp = Experiment(args.exp_name, args, mode=args.mode, exps_basedir=args.basedir, tensorboard_dir=args.basedir)
     if args.cfg is None:
         cfg_path = exp.cfg_path
     else:
@@ -46,7 +48,7 @@ def main():
     cfg = Config(cfg_path)
     exp.set_cfg(cfg, override=False)
     device = torch.device('cpu') if not torch.cuda.is_available() or args.cpu else torch.device('cuda')
-    runner = Runner(cfg, exp, device, view=args.view, resume=args.resume, deterministic=args.deterministic)
+    runner = Runner(cfg, exp, device, view=args.view, resume=args.resume, ft=args.ft, deterministic=args.deterministic)
     if args.mode == 'train':
         try:
             runner.train()
