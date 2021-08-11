@@ -35,14 +35,14 @@ class Runner:
         optimizer = self.cfg.get_optimizer(model.parameters())
         scheduler = self.cfg.get_lr_scheduler(optimizer)
         if self.resume:
-            print("resume from last state!")
+            self.logger.info("resume from last state!")
             last_epoch, model, optimizer, scheduler = self.exp.load_last_train_state(model, optimizer, scheduler)
             starting_epoch = last_epoch + 1
         elif self.ft:
-            print(f"finetune form {self.ft}")
+            self.logger.info(f"finetune form {self.ft}")
             model= self.load_ckpt(model, self.ft)
         else:
-            print("training from scratch!")
+            self.logger.info("training from scratch!")
 
         max_epochs = self.cfg['epochs']
         train_loader = self.get_train_dataloader()
