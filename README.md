@@ -52,12 +52,10 @@ For example, to train LaneATT with the ResNet-34 backbone on TuSimple, run:
 ```
 python main.py train --exp_name laneatt_r34_tusimple --cfg cfgs/laneatt_tusimple_resnet34.yml
 ```
-
+If you want to train with pretrained model, specify the parameter "--ft" as follows.
 ```
 python main.py train --exp_name neolix_res18 --cfg cfgs/laneatt_neolix_resnet18.yml --ft "/path/to/checkpoint"
 ```
-CUDA_VISIBLE_DEVICES=1 python main.py train --exp_name neolix_res18_tusimple --cfg cfgs/laneatt_neolix_resnet18.yml --ft "/data/pantengteng/laneATT_ex
-
 
 After running this command, a directory `experiments` should be created (if it does not already exists). Another
 directory `laneatt_r34_tusimple` will be inside it, containing data related to that experiment (e.g., model checkpoints, logs, evaluation results, etc)
