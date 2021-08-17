@@ -8,11 +8,11 @@ model:
     backbone: resnet18
     S: &S 72
     topk_anchors: 1000
-    anchors_freq_path: 'data/tusimple_anchors_freq.pt'
+    anchors_freq_path: 'data/culane_anchors_freq.pt'
     img_h: &img_h 360
     img_w: &img_w 640
 batch_size: 16
-epochs: 100
+epochs: 120
 loss_parameters: {}
 train_parameters:
   conf_threshold:
@@ -25,11 +25,11 @@ test_parameters:
 optimizer:
   name: Adam
   parameters:
-    lr: 0.00024
+    lr: 0.00009
 lr_scheduler:
   name: CosineAnnealingLR
   parameters:
-    T_max: 4540000 # 100 * 454 iterations
+    T_max: 31680 # 100 * 454 iterations
 
 # Dataset settings
 datasets:

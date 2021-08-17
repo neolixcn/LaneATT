@@ -79,15 +79,26 @@ class LaneATT(nn.Module):
         softmax = nn.Softmax(dim=1)
         scores = self.attention_layer(batch_anchor_features)
         attention = softmax(scores).reshape(x.shape[0], len(self.anchors), -1)
+        
         # attention_matrix = torch.eye(attention.shape[1], device=x.device).repeat(x.shape[0], 1, 1)
-        import pdb; pdb.set_trace()
-        attention_matrix = torch.eye(attention.shape[1], device=x.device).repeat(x.shape[0], 1, 1)
-        non_diag_inds = torch.nonzero(attention_matrix == 0., as_tuple=False)
-        attention_matrix[:] = 0
-        attention_matrix[non_diag_inds[:, 0], non_diag_inds[:, 1], non_diag_inds[:, 2]] = attention.flatten()
-        batch_anchor_features = batch_anchor_features.reshape(x.shape[0], len(self.anchors), -1)
-        # attention_features = torch.bmm(torch.transpose(batch_anchor_features, 1, 2),
-                                    #    torch.transpose(attention_matrix, 1, 2)).transpose(1, 2)
+        # non_diag_inds = torch.nonzero(attention_matrix == 0., as_tuple=False)
+        # attention_matrix[:] = 0
+        # attention_matrix[non_diag_inds[:, 0], non_diag_inds[:, 1], non_diag_inds[:, 2]] = attention.flatten()
+        
+        # temp_matrix = torch.eye(attention.shape[1], device=x.device).unsqueeze(0) # trt缺乏eyelike算子
+        temp_matrix = torch.tensor(np.eye(int(attention.shape[1]))).cuda().unsqueeze(0)
+        attention_matrix = torch.zeros(int(x.shape[0]),1000,1000).cuda()
+        # attention_matrix[temp_matrix==0] = attention.flatten() # 索引不支持
+        index_list = []
+        for i in range(1000):
+            temp_list = list(range(999))
+            temp_list.insert(i,0)
+            index_list.append(temp_list)
+        index_matrix =torch.tensor(index_list).cuda().repeat(int(x.shape[0]),1,1)
+        attention_matrix = attention.gather(dim =2,index=index_matrix) # 转trt提示GatherElement不支持
+        attention_matrix = torch.where(temp_matrix==0, attention_matrix, torch.tensor(0,dtype=torch.float32).cuda())
+
+        batch_anchor_features = batch_anchor_features.reshape(int(x.shape[0]), len(self.anchors), -1)
         attention_features = torch.bmm(attention_matrix, batch_anchor_features)
         attention_features = attention_features.reshape(-1, self.anchor_feat_channels * self.fmap_h)
         batch_anchor_features = batch_anchor_features.reshape(-1, self.anchor_feat_channels * self.fmap_h)
@@ -96,7 +107,6 @@ class LaneATT(nn.Module):
         # Predict
         cls_logits = self.cls_layer(batch_anchor_features)
         reg = self.reg_layer(batch_anchor_features)
-        import pdb; pdb.set_trace()
 
         # Undo joining
         cls_logits = cls_logits.reshape(x.shape[0], -1, cls_logits.shape[1])
@@ -107,8 +117,8 @@ class LaneATT(nn.Module):
         reg_proposals += self.anchors
         reg_proposals[:, :, :2] = cls_logits
         reg_proposals[:, :, 4:] += reg
+        
         return reg_proposals, attention_matrix
-        # import pdb; pdb.set_trace()
         # Apply nms
         # proposals_list = self.nms(reg_proposals, attention_matrix, nms_thres, nms_topk, conf_threshold)
 
@@ -229,24 +239,16 @@ class LaneATT(nn.Module):
         return cut_zs, cut_ys, cut_xs, invalid_mask
 
     def cut_anchor_features(self, features):
-        # definitions
         batch_size = features.shape[0]
         n_proposals = len(self.anchors)
         n_fmaps = features.shape[1]
-        # batch_anchor_features = torch.zeros((batch_size, n_proposals, n_fmaps, self.fmap_h, 1), device=features.device)
 
         # actual cutting
-        batch_anchor_features2 = features[:, self.cut_zs, self.cut_ys, self.cut_xs].view(int(batch_size), n_proposals, int(n_fmaps), self.fmap_h, 1)
-        # batch_anchor_features2[:, self.invalid_mask] = 0
-        batch_anchor_features2 = batch_anchor_features2*(~self.invalid_mask)
-        # batch_anchor_features2 = torch.where(self.invalid_mask.unsqueeze(0), torch.tensor(0,dtype=torch.float32).cuda(), batch_anchor_features2)
-        
-        # # actual cutting
-        # for batch_idx, img_features in enumerate(features):
-        #     rois = img_features[self.cut_zs, self.cut_ys, self.cut_xs].view(n_proposals, n_fmaps, self.fmap_h, 1)
-        #     rois[self.invalid_mask] = 0
-        #     batch_anchor_features[batch_idx] = rois
-        return batch_anchor_features2
+        batch_anchor_features = features[:, self.cut_zs, self.cut_ys, self.cut_xs].view(int(batch_size), n_proposals, int(n_fmaps), self.fmap_h, 1)
+        # torch.where(self.invalid_mask.unsqueeze(0), torch.tensor(0,dtype=torch.float32).cuda(), rois)
+        batch_anchor_features = batch_anchor_features*(~self.invalid_mask)
+
+        return batch_anchor_features
 
     def generate_anchors(self, lateral_n, bottom_n):
         left_anchors, left_cut = self.generate_side_anchors(self.left_angles, x=0., nb_origins=lateral_n)

@@ -141,8 +141,9 @@ class Runner:
         return val_loader
 
     def load_ckpt(self, model, ckpt):
-        train_state = torch.load(ckpt)
-        model.load_state_dict(train_state['model'])
+        train_state = torch.load(ckpt)['model']
+        model.load_state_dict(train_state)
+
         return model
     
     @staticmethod

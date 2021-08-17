@@ -93,6 +93,12 @@ python test.py txt_save_images -pt /data/pantengteng/laneATT_experiments/laneatt
 ```
 python test.py txt_save_avi -pt /nfs/neolix_data1/temp_bp/lanxin_temp/tianyi/f1/models/model_0100.pt -path test.txt  -cfg laneatt_tusimple_resnet18.yml
 ```
+#### Export model
+如果需要到出onnx模型，可以通过运行以下命令，其中ckpt是模型参数保存路径，cfg为模型配置，onnx_path为转出onnx模型的名称。如果模型成功转出onnx，并通过onnxruntime验证，会打印"Onnx model output looks good!"
+需要注意，转换模型用到的模型文件为lib/models/laneatt_list_onnx.py，出于转换onnx和onnxruntime验证的需要，跟原始模型有所不同。
+```
+python export_onnx.py -ckpt /nfs/neolix_data1/temp_bp/lanxin_temp/tianyi/g2/models/model_0113.pt  -cfg cfgs/onnx.yml -onnx_path laneATT_test.onnx
+```
 
 #### Reproducing a result from the paper
 0. Set up the dataset you want to reproduce the results on (as described in [DATASETS.md](DATASETS.md)).
