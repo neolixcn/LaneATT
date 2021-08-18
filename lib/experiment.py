@@ -26,11 +26,10 @@ class Experiment:
             self.log_args(args)
 
     def setup_exp_dir(self):
-        if not os.path.exists(self.exp_dirpath):
-            os.makedirs(self.exp_dirpath)
-            os.makedirs(self.models_dirpath)
-            os.makedirs(self.results_dirpath)
-            self.save_code_state()
+        os.makedirs(self.exp_dirpath, mode=0o777,exist_ok=True)
+        os.makedirs(self.models_dirpath, mode=0o777,exist_ok=True)
+        os.makedirs(self.results_dirpath, mode=0o777,exist_ok=True)
+        self.save_code_state()
 
     def save_code_state(self):
         state = "Git hash: {}".format(

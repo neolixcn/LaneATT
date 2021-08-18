@@ -75,3 +75,24 @@ llamas
     └── valid
 ```
 
+#### NeoLix
+1. 格式转换
+   python convert_label_format.py 将neolix数据集转换为tusimple格式
+   需要修改的变量：txt_path为neolix数据集绝对路径
+             json_path为转换成tusimple格式后生成的json的绝对路径
+             h_samples为y轴采样点（间距需为10）
+             shuaixuan_lane为筛选出行驶区域中心的车道线数量
+2. 数据集结构
+```
+nelix_lane_3mm
+├── images
+│   ├── subfolder1
+│   ├── subfolder2
+│   └── ...
+└── labels
+│   ├── subfolder1
+│   ├── subfolder2
+│   └── ...
+└── train.json
+└── val.json    
+```

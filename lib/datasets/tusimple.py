@@ -10,9 +10,9 @@ from utils.tusimple_metric import LaneEval
 from .lane_dataset_loader import LaneDatasetLoader
 
 SPLIT_FILES = {
-    'train+val': ['label_data_0313.json', 'label_data_0601.json', 'label_data_0531.json'],
-    'train': ['label_data_0313.json', 'label_data_0601.json'],
-    'val': ['label_data_0531.json'],
+    'train+val': ['train.json','val.json'],
+    'train': ['train.json'],
+    'val': ['val.json'],
     'test': ['test_label.json'],
 }
 
@@ -31,7 +31,7 @@ class TuSimple(LaneDatasetLoader):
         if root is None:
             raise Exception('Please specify the root directory')
 
-        self.img_w, self.img_h = 1280, 720
+        self.img_w, self.img_h = 1920, 1080#1280, 720
         self.annotations = []
         self.load_annotations()
 
@@ -40,10 +40,10 @@ class TuSimple(LaneDatasetLoader):
             self.max_lanes = max_lanes
 
     def get_img_heigth(self, _):
-        return 720
+        return 1080 #720
 
     def get_img_width(self, _):
-        return 1280
+        return 1920 #1280
 
     def get_metrics(self, lanes, idx):
         label = self.annotations[idx]

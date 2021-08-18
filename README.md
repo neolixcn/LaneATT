@@ -52,6 +52,11 @@ For example, to train LaneATT with the ResNet-34 backbone on TuSimple, run:
 ```
 python main.py train --exp_name laneatt_r34_tusimple --cfg cfgs/laneatt_tusimple_resnet34.yml
 ```
+If you want to train with pretrained model, specify the parameter "--ft" as follows.
+```
+python main.py train --exp_name neolix_res18 --cfg cfgs/laneatt_neolix_resnet18.yml --ft "/path/to/checkpoint"
+```
+
 After running this command, a directory `experiments` should be created (if it does not already exists). Another
 directory `laneatt_r34_tusimple` will be inside it, containing data related to that experiment (e.g., model checkpoints, logs, evaluation results, etc)
 
@@ -62,6 +67,39 @@ python main.py test --exp_name example
 This command will evaluate the model saved in the last checkpoint of the experiment `example` (inside `experiments`).
 If you want to evaluate another checkpoint, the `--epoch` flag can be used. For other flags, please see `python main.py -h`. To **visualize the predictions**, run the above command with the additional flag `--view all`.
 
+#### Inference
+使用test.py脚本可进行无标签数据的推理测试，脚本支持以下功能(其中 -pt为模型路径参数，-cfg为配置文件路径参数)：
+ - 测试单张图片
+```
+python test.py image -pt /nfs/neolix_data1/temp_bp/lanxin_temp/tianyi/f1/models/model_0100.pt -path /home/chengchonghao/program/LaneATT/test_images/20210310155026.record.00000_1615362641.5730548.png  -cfg laneatt_tusimple_resnet18.yml
+```
+ - 测试文件夹下所有图片，保存预测图片结果到默认文件夹中
+```
+python test.py path_save_images -pt /data/pantengteng/laneATT_experiments/laneatt_r18_tusimple/models_exp1_b3/model_0099.pt -path /home/chengchonghao/program/LaneATT/test_images  -cfg laneatt_tusimple_resnet18.yml
+```
+ - 测试文件夹下所有图片，保存成视频形式到当前文件夹中
+```
+python test.py path_save_avi -pt /data/pantengteng/laneATT_experiments/laneatt_r18_tusimple/models_exp1_b3/model_0099.pt -path /home/chengchonghao/program/LaneATT/test_images  -cfg cfgs/laneatt_culane_resnet18.yml
+```
+ - 打开摄像头实时预测
+```
+python test.py camera -pt /data/pantengteng/laneATT_experiments/laneatt_r18_tusimple/models_exp1_b3/model_0099.pt -path /home/chengchonghao/program/LaneATT/test_images  -cfg cfgs/laneatt_culane_resnet18.yml
+```
+ - 根据TxT测试公司的测试集，保存为图片
+```
+python test.py txt_save_images -pt /data/pantengteng/laneATT_experiments/laneatt_r18_tusimple/models_exp1_b3/model_0099.pt -path test.txt  -cfg cfgs/laneatt_culane_resnet18.yml
+```
+ - 根据TxT测试公司的测试集，保存为视频
+```
+python test.py txt_save_avi -pt /nfs/neolix_data1/temp_bp/lanxin_temp/tianyi/f1/models/model_0100.pt -path test.txt  -cfg laneatt_tusimple_resnet18.yml
+```
+#### Export model
+如果需要到出onnx模型，可以通过运行以下命令，其中ckpt是模型参数保存路径，cfg为模型配置，onnx_path为转出onnx模型的名称。如果模型成功转出onnx，并通过onnxruntime验证，会打印"Onnx model output looks good!"
+需要注意，转换模型用到的模型文件为lib/models/laneatt_list_onnx.py，出于转换onnx和onnxruntime验证的需要，跟原始模型有所不同。
+```
+python export_onnx.py -ckpt /nfs/neolix_data1/temp_bp/lanxin_temp/tianyi/g2/models/model_0113.pt  -cfg cfgs/onnx.yml -onnx_path laneATT_test.onnx
+```
+
 #### Reproducing a result from the paper
 0. Set up the dataset you want to reproduce the results on (as described in [DATASETS.md](DATASETS.md)).
 1. Download the zip containing all pretrained models  and then unzip it at the code's root:
@@ -71,9 +109,9 @@ unzip laneatt_experiments.zip
 ```
 2. Run the evaluation (inference + metric computation):
 ```bash
-python main.py test --exp_name $EXP_NAME
+python main.py test --exp_name $EXP_NAME --epoch
 ```
-Replace `$EXP_NAME` with the name of a directory inside `experiments/`. For instance, if you want to reproduce the results using the ResNet-34 backbone on the TuSimple dataset, run:
+Replace `$EXP_NAME` with the name of a directory inside `experiments/`, . For instance, if you want to reproduce the results using the ResNet-34 backbone on the TuSimple dataset, run:
 ```bash
 python main.py test --exp_name laneatt_r34_tusimple
 ```
