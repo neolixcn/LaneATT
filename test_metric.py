@@ -12,9 +12,6 @@ import matplotlib.pyplot as plt
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train lane detector")
-    parser.add_argument(
-        "--mode", choices=["torch", "fp32", "fp16", "int8"], help="specity the mode for converting trt engine")
-    parser.add_argument("--onnx", help="specify the path for onnx model", required=True)
     parser.add_argument("-pt", help=" pytorch pth path", required=True)
     parser.add_argument("--cfg", help="Config file", required=True)
     args = parser.parse_args()
@@ -43,7 +40,6 @@ def calc_k(line):
 
 def convert_2_camera(points, scale=(1,1), K=None, camera_height=1.456):
     # remap to org_img
-    # import pdb; pdb.set_trace()
     points = np.array(scale) * points
     if not K:
         K = np.array([[1000, 0,   960],
@@ -55,7 +51,6 @@ def convert_2_camera(points, scale=(1,1), K=None, camera_height=1.456):
         norm_camera_point = np.dot(K_inv, np.concatenate((point, np.array([1]))))
         ratio = camera_height / norm_camera_point[1]
         camera_point = norm_camera_point * ratio
-        # import pdb; pdb.set_trace()
         camera_points.append(camera_point[::2])
     
     return np.array(camera_points)
@@ -64,7 +59,6 @@ def abs_poly_integration(coeff, start, end):
     roots = sorted([root for root in np.roots(coeff) if root > start and root < end and not isinstance(root, complex)])
     area = 0
     func = lambda x,a,b,c,d: a*x**3+b*x**2+c*x+d
-    # func = lambda x,a,b,c,d: abs(a*x**3+b*x**2+c*x+d)
     roots.append(end)
     for i,root in enumerate(roots):
         if i == 0:
@@ -104,8 +98,6 @@ def find_ego_dict(lanes, img_size, org_img_size):
 
 def calculate_error(prediction, label, img_size, org_img_size, min_dist=0, max_dist=20):
     # 1. decode ego_left and ego_right
-    # img_width = img_size[0]
-    # prediction[:, 4] = torch.round(prediction[:, 4])
     predict_dict = find_ego_dict(prediction, img_size, org_img_size)
     label_dict = find_ego_dict(label, img_size, org_img_size)
     # get ego_left and ego_right in label
@@ -120,7 +112,6 @@ def calculate_error(prediction, label, img_size, org_img_size, min_dist=0, max_d
         point_set2 = label_dict[key][1]
 
         # 2. calculate
-        # if one set has no point, return 0 error.
         if not(point_set1.shape[0] and point_set2.shape[0]):
             print("one set has no point!")
             continue
