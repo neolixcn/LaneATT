@@ -110,13 +110,12 @@ def calculate_error(prediction, label, img_size, org_img_size, min_dist=0, max_d
     label_dict = find_ego_dict(label, img_size, org_img_size)
     # get ego_left and ego_right in label
 
-    error_dict = {"left":0,"right":0}
+    error_dict = {"left":-1,"right":-1}
     for key,val in predict_dict.items():
         idx, point_set1 = val
         # label_xs = label[idx]
         if key not in label_dict:
             print(f"label has no {key}")
-            error_dict[key] = 0
             continue
         point_set2 = label_dict[key][1]
 
@@ -125,7 +124,6 @@ def calculate_error(prediction, label, img_size, org_img_size, min_dist=0, max_d
         if not(point_set1.shape[0] and point_set2.shape[0]):
             print("one set has no point!")
             continue
-        # import pdb; pdb.set_trace()
         point_set1 = point_set1.tolist()
         point_set2 = point_set2.tolist()
         point_set1 = list(filter(lambda x: x[1] >= min_dist and x[1] <= max_dist, point_set1))
@@ -145,7 +143,6 @@ def calculate_error(prediction, label, img_size, org_img_size, min_dist=0, max_d
                 continue
             error_list = [abs(point_set1[i][0] - point_set2[i][0]) for i in range(len(point_set1))]
             error_dict[key] = sum(error_list)/len(error_list)
-            # print(key, " error: ", error_dict[key] )
         except Exception as e:
             print(e)
             print(f"len1{len(point_set1)}, len2{len(point_set2)}")
@@ -165,20 +162,22 @@ def draw_chart(left_error, right_error, show=False, save_path="./error.png"):
     ax1 = plt.subplot(2,1,1)
     # plt.bar(self.time, self.left_error)
     # plt.axhline(0.1, color='green', linestyle='--')
-    plt.hist(x=left_error, bins=50, density=True, range=[0,1], color="steelblue",edgecolor="black")
+    max_bin = 100
+    max_error = 1
+    plt.hist(x=left_error, bins=100, density=True, range=[0,max_error], color="steelblue",edgecolor="black")
     plt.axvline(0.1, color='green', linestyle='--', label="0.1")
     plt.axvline(0.2, color='green', linestyle='--', label="0.2")
     plt.xlabel("left_error")
-    plt.ylabel("10*prob")
+    plt.ylabel(f"{round(max_bin/max_error)}*prob")
     plt.title("error")
     ax2 = plt.subplot(2,1,2)
-    plt.hist(x=right_error, bins=50, density=True, range=[0,1], color="steelblue", edgecolor="black")
+    plt.hist(x=right_error, bins=100, density=True, range=[0,max_error], color="steelblue", edgecolor="black")
     # plt.bar(self.time, self.right_error)
     # plt.axhline(0.1, color='green', linestyle='--')
     plt.axvline(0.1, color='green', linestyle='--', label="0.1")
     plt.axvline(0.2, color='green', linestyle='--', label="0.2")
     plt.xlabel("right_error")
-    plt.ylabel("10*prob")
+    plt.ylabel(f"{round(max_bin/max_error)}*prob")
     # plt.title("right_error")
     plt.savefig(save_path)
     if show:
@@ -223,14 +222,18 @@ def main():
             prediction = model.decode(output, as_lanes=False)
 
             if not len(prediction[0]):
-                left_error, right_error = 0, 0
+                continue
             else:
                 left_error, right_error = calculate_error(prediction[0].cpu(), labels[0], (img_w, img_h), (org_img_w, org_img_h))
-            left_error_list.append(left_error)
-            right_error_list.append(right_error)
-            tbar.set_description(f"error: avg {(sum(left_error_list) + sum(right_error_list)) / (2 * (idx + 1))}, left {left_error}, right {right_error}.")
-    print(f"average left error {sum(left_error_list) / len(test_dataset)}, average right error {sum(right_error_list) / len(test_dataset)}, \
-                average lane error {(sum(left_error_list) + sum(right_error_list)) / (2 * len(test_dataset))}")
+            if left_error != -1:
+                left_error_list.append(left_error)
+            elif right_error != -1:
+                right_error_list.append(right_error)
+            else:
+                continue
+            tbar.set_description(f"error: avg {(sum(left_error_list) + sum(right_error_list)) / (len(left_error_list) + len(right_error_list))}, left {left_error}, right {right_error}.")
+    print(f"average left error({len(left_error_list)}) {sum(left_error_list) / len(left_error_list)}, average right error({len(right_error_list)}) {sum(right_error_list) / len(right_error_list)}, \
+                average lane error {(sum(left_error_list) + sum(right_error_list)) / (len(left_error_list) + len(right_error_list))}")
     draw_chart(left_error_list, right_error_list, show=False, save_path="./error.png")
 
 if __name__ == '__main__':
